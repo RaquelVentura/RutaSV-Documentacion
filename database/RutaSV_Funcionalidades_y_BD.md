@@ -6,7 +6,7 @@ tags:
   - postgresql
   - proyecto-final
 motor: PostgreSQL 18
-backend: .NET 810/ EF Core
+backend: .NET 10/ EF Core
 ---
 
 # RutaSV – Funcionalidades y Diseño de Base de Datos
