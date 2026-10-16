@@ -29,7 +29,7 @@ backend: .NET 10/ EF Core
 
 ## 1. Actores y permisos
 
-3| Actor | ¿Tiene cuenta? | Rol en BD (`app_user.role`) | Alcance |
+| Actor | ¿Tiene cuenta? | Rol en BD (`app_user.role`) | Alcance |
 |---|---|---|---|
 | Administrador | Sí | `ADMIN` | Control total del sistema |
 | Operador | Sí | `OPERADOR` | Gestiona sus empresas, experiencias, disponibilidad y reservas recibidas |
