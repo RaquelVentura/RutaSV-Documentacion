@@ -29,7 +29,7 @@ backend: .NET 10/ EF Core
 
 ## 1. Actores y permisos
 
-| Actor | ¿Tiene cuenta? | Rol en BD (`usuario.rol`) | Alcance |
+3| Actor | ¿Tiene cuenta? | Rol en BD (`app_user.role`) | Alcance |
 |---|---|---|---|
 | Administrador | Sí | `ADMIN` | Control total del sistema |
 | Operador | Sí | `OPERADOR` | Gestiona sus empresas, experiencias, disponibilidad y reservas recibidas |
@@ -58,11 +58,11 @@ Matriz resumida:
 ### 2.1 Visitante sin cuenta (público)
 | ID | Funcionalidad | Detalle |
 |---|---|---|
-| RF-P01 | Listar catálogo | Solo experiencias con `estado = PUBLICADA` y empresa `APROBADA`. Paginado, con foto de portada, título, categoría, municipio, precio y calificación promedio. |
+| RF-P01 | Listar catálogo | Solo experiencias con `status = PUBLICADA` y empresa `APROBADA`. Paginado, con foto de portada, título, categoría, municipio, precio y calificación promedio. |
 | RF-P02 | Búsqueda por texto | Full-text search de PostgreSQL sobre título, descripción corta y descripción. |
 | RF-P03 | Filtros combinables | Categoría (Comida, Playa, Montaña, Surf, Caminata…), departamento, municipio, rango de precio, calificación mínima, fecha deseada (solo con cupos disponibles), día/horario de atención, duración, dificultad. |
 | RF-P04 | Ordenamiento | Relevancia, precio (asc/desc), mejor calificadas, más recientes. |
-| RF-P05 | Ver ficha de detalle | Galería de imágenes, descripción, qué incluye/no incluye, qué llevar, precio, duración, horarios de atención, ubicación exacta en mapa (Leaflet con `latitud`/`longitud`), datos de la empresa, reseñas con estrellas y promedio. |
+| RF-P05 | Ver ficha de detalle | Galería de imágenes, descripción, qué incluye/no incluye, qué llevar, precio, duración, horarios de atención, ubicación exacta en mapa (Leaflet con `latitude`/`longitude`), datos de la empresa, reseñas con estrellas y promedio. |
 | RF-P06 | Ver disponibilidad pública | Calendario de fechas/horarios con cupos restantes (sin permitir reservar). |
 | RF-P07 | Invitación a registro | Al intentar reservar o ver reservas, redirigir a registro/inicio de sesión. |
 | RF-P08 | Registro de cuenta | Formulario (nombre, apellido, correo, contraseña, teléfono) → rol `VISITANTE`; envía correo de verificación. |
@@ -72,13 +72,13 @@ Incluye todo lo anterior, más:
 
 | ID | Funcionalidad | Detalle |
 |---|---|---|
-| RF-V01 | Iniciar / cerrar sesión | JWT + refresh token. Recuperación de contraseña por correo (`token_usuario`). |
+| RF-V01 | Iniciar / cerrar sesión | JWT + refresh token. Recuperación de contraseña por correo (`user_token`). |
 | RF-V02 | Gestionar perfil | Editar datos personales, foto, cambiar contraseña. |
-| RF-V03 | Crear reserva | Elige experiencia → fecha/horario con cupo → número de personas → datos de contacto y notas. El sistema valida cupos, estado de la disponibilidad, límites por reserva y fecha futura. Crea la reserva con precio congelado (`precio_unitario`) y descuenta cupos en una transacción. |
-| RF-V04 | Pago simulado (demo) | Marca `estado_pago = PAGADO_DEMO`. Desacoplado para integrar una pasarela real a futuro. |
-| RF-V05 | Correo de reserva | Al crear/confirmar la reserva se envía correo con código, experiencia, fecha, hora, personas, total y estado. Se registra en `notificacion_correo`. |
-| RF-V06 | Mis reservas | Listado con filtros por estado y fechas; detalle de cada reserva y su línea de tiempo (`reserva_historial`). |
-| RF-V07 | Cancelar reserva | Solo si cumple la política de cancelación (`politica_cancelacion_horas` antes del inicio). Libera cupos, registra motivo y envía correo. |
+| RF-V03 | Crear reserva | Elige experiencia → fecha/horario con cupo → número de personas → datos de contacto y notas. El sistema valida cupos, estado de la disponibilidad, límites por reserva y fecha futura. Crea la reserva con precio congelado (`unit_price`) y descuenta cupos en una transacción. |
+| RF-V04 | Pago simulado (demo) | Marca `payment_status = PAGADO_DEMO`. Desacoplado para integrar una pasarela real a futuro. |
+| RF-V05 | Correo de reserva | Al crear/confirmar la reserva se envía correo con código, experiencia, fecha, hora, personas, total y estado. Se registra en `email_notification`. |
+| RF-V06 | Mis reservas | Listado con filtros por estado y fechas; detalle de cada reserva y su línea de tiempo (`reservation_history`). |
+| RF-V07 | Cancelar reserva | Solo si cumple la política de cancelación (`cancellation_policy_hours` antes del inicio). Libera cupos, registra motivo y envía correo. |
 | RF-V08 | Reseñar | Solo si la reserva está `COMPLETADA` y no existe reseña previa. Calificación 1–5 estrellas + comentario opcional. Actualiza promedio de la experiencia. |
 | RF-V09 | Editar/eliminar su reseña | Dentro de una ventana de tiempo configurable. |
 | RF-V10 | Favoritos | Guardar/quitar experiencias y ver su lista. |
@@ -93,7 +93,7 @@ Incluye todo lo anterior, más:
 | RF-O05 | Horarios semanales           | Definir horarios de atención/salidas por día de la semana con hora de inicio/fin y cupos por defecto.                                                                                                                                                              |
 | RF-O06 | Gestionar disponibilidad     | Generar disponibilidad por rango de fechas a partir de los horarios semanales; bloquear/abrir fechas, editar cupos y tal vez: precio especial por fecha.                                                                                                           |
 | RF-O07 | Calendario                   | Vista de calendario con ocupación y reservas por día.                                                                                                                                                                                                              |
-| RF-O08 | Gestionar reservas recibidas | Listar y filtrar; confirmar, rechazar, marcar `COMPLETADA` o `NO_ASISTIO`; cancelar con motivo. Cada cambio queda en `reserva_historial` y notifica al turista.                                                                                                    |
+| RF-O08 | Gestionar reservas recibidas | Listar y filtrar; confirmar, rechazar, marcar `COMPLETADA` o `NO_ASISTIO`; cancelar con motivo. Cada cambio queda en `reservation_history` y notifica al turista.                                                                                                    |
 | RF-O09 | Confirmación automática      | Opción por experiencia: si está activa, la reserva nace `CONFIRMADA`; si no, queda `PENDIENTE` hasta que el operador la confirme.                                                                                                                                  |
 | RF-O10 | Responder reseñas            | Una respuesta pública por reseña.                                                                                                                                                                                                                                  |
 | RF-O11 | Panel de métricas            | Reservas por estado, ingresos demo, calificación promedio, experiencias más reservadas.                                                                                                                                                                            |
@@ -107,8 +107,8 @@ Incluye todo lo anterior, más:
 | RF-A04 | Gestión de catálogos | CRUD de categorías, departamentos y municipios. |
 | RF-A05 | Gestión de reservas | Ver todas las reservas, intervenir en cualquier cambio de estado. |
 | RF-A06 | Moderación de reseñas | Ocultar/restaurar reseñas reportadas o inapropiadas. |
-| RF-A07 | Monitoreo de correos | Ver `notificacion_correo`, reintentar envíos fallidos. |
-| RF-A08 | Auditoría | Consultar `log_auditoria` (quién hizo qué y cuándo). |
+| RF-A07 | Monitoreo de correos | Ver `email_notification`, reintentar envíos fallidos. |
+| RF-A08 | Auditoría | Consultar `audit_log` (quién hizo qué y cuándo). |
 | RF-A09 | Dashboard global | Usuarios, empresas, experiencias, reservas por periodo, categorías más populares, calificaciones. |
 
 ---
@@ -119,20 +119,20 @@ Incluye todo lo anterior, más:
 |---|---|
 | RN-01 | El correo del usuario es único y no distingue mayúsculas (`citext`). |
 | RN-02 | Solo se muestran públicamente experiencias `PUBLICADA` cuya empresa esté `APROBADA` y cuyo operador esté `ACTIVO`. |
-| RN-03 | **No hay sobreventa:** `cupos_reservados <= cupos_totales` (CHECK) y la reserva se hace en transacción con bloqueo de fila (`SELECT … FOR UPDATE`) sobre `disponibilidad`. |
-| RN-04 | Una reserva solo puede hacerse sobre una disponibilidad `ABIERTA`, futura, con cupos suficientes y respetando `min_personas`/`max_personas` de la experiencia. |
-| RN-05 | `precio_unitario` y `total` se congelan al reservar (el cambio posterior de precio no afecta reservas existentes). `total = precio_unitario × cantidad_personas`. |
+| RN-03 | **No hay sobreventa:** `reserved_capacity <= total_capacity` (CHECK) y la reserva se hace en transacción con bloqueo de fila (`SELECT … FOR UPDATE`) sobre `availability`. |
+| RN-04 | Una reserva solo puede hacerse sobre una disponibilidad `ABIERTA`, futura, con cupos suficientes y respetando `min_people`/`max_people` de la experiencia. |
+| RN-05 | `unit_price` y `total` se congelan al reservar (el cambio posterior de precio no afecta reservas existentes). `total = unit_price × people_count`. |
 | RN-06 | Estados de reserva: `PENDIENTE → CONFIRMADA → COMPLETADA`; `PENDIENTE/CONFIRMADA → CANCELADA`; `CONFIRMADA → NO_ASISTIO`; `PENDIENTE → RECHAZADA`. Estados finales no cambian. |
-| RN-07 | Al pasar a `CANCELADA` o `RECHAZADA`, los cupos vuelven a `disponibilidad.cupos_reservados`. |
-| RN-08 | El visitante solo cancela antes de `fecha - politica_cancelacion_horas`. Operador/admin pueden cancelar con motivo. |
+| RN-07 | Al pasar a `CANCELADA` o `RECHAZADA`, los cupos vuelven a `availability.reserved_capacity`. |
+| RN-08 | El visitante solo cancela antes de `date - cancellation_policy_hours`. Operador/admin pueden cancelar con motivo. |
 | RN-09 | Toda reserva es de un usuario con cuenta (`VISITANTE`). El visitante sin cuenta no genera registros. |
-| RN-10 | Solo una reseña por reserva (`UNIQUE(reserva_id)`) y únicamente si la reserva está `COMPLETADA`. |
-| RN-11 | `experiencia.calificacion_promedio` y `total_resenas` se recalculan al crear/editar/ocultar reseñas. |
-| RN-12 | Cada cambio de estado de reserva inserta una fila en `reserva_historial`. |
-| RN-13 | Cada experiencia tiene exactamente una imagen de portada (`es_portada = true`). |
+| RN-10 | Solo una reseña por reserva (`UNIQUE(reservation_id)`) y únicamente si la reserva está `COMPLETADA`. |
+| RN-11 | `experience.average_rating` y `total_reviews` se recalculan al crear/editar/ocultar reseñas. |
+| RN-12 | Cada cambio de estado de reserva inserta una fila en `reservation_history`. |
+| RN-13 | Cada experiencia tiene exactamente una imagen de portada (`is_cover = true`). |
 | RN-14 | Las imágenes se guardan en MinIO; en BD solo se guarda la clave/URL. |
 | RN-15 | Borrado lógico en usuarios, empresas y experiencias (no se eliminan si tienen reservas). |
-| RN-16 | Todo cambio sensible (aprobaciones, bloqueos, cambios de rol, cancelaciones forzadas) se registra en `log_auditoria`. |
+| RN-16 | Todo cambio sensible (aprobaciones, bloqueos, cambios de rol, cancelaciones forzadas) se registra en `audit_log`. |
 
 ---
 
@@ -161,25 +161,25 @@ Se implementan como `varchar` con CHECK o como enums de EF Core.
 
 > **Leyenda:** PK = clave primaria · FK = clave foránea · UQ = único · NN = no nulo · DEF = valor por defecto.
 
-### 5.1 `departamento`
+### 5.1 `department`
 Catálogo geográfico de los 14 departamentos de El Salvador.
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | smallint | PK | Identificador |
-| nombre | varchar(60) | NN, UQ | Nombre (ej. La Libertad) |
+| name | varchar(60) | NN, UQ | Nombre (ej. La Libertad) |
 
-### 5.2 `municipio`
+### 5.2 `municipality`
 Catálogo de municipios, asociados a un departamento.
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | int | PK | Identificador |
-| departamento_id | smallint | FK → departamento.id, NN | Departamento al que pertenece |
-| nombre | varchar(80) | NN | Nombre (ej. El Tunco / Tamanique) |
-| | | UQ(departamento_id, nombre) | Evita duplicados |
+| department_id | smallint | FK → department.id, NN | Departamento al que pertenece |
+| name | varchar(80) | NN | Nombre (ej. El Tunco / Tamanique) |
+| | | UQ(department_id, name) | Evita duplicados |
 
-### 5.3 `usuario`
+### 5.3 `app_user`
 Todas las personas con cuenta: administradores, operadores y turistas.
 
 | Campo | Tipo | Restricciones | Descripción |
@@ -187,259 +187,259 @@ Todas las personas con cuenta: administradores, operadores y turistas.
 | id | uuid | PK | Identificador |
 | email | citext | NN, UQ | Correo (login) |
 | password_hash | varchar(255) | NN | Hash (BCrypt/Argon2), nunca texto plano |
-| nombre | varchar(80) | NN | Nombres |
-| apellido | varchar(80) | NN | Apellidos |
-| telefono | varchar(20) | | Teléfono de contacto |
-| foto_url | varchar(500) | | Foto de perfil (MinIO) |
-| idioma_preferido | varchar(5) | DEF 'es' | `es` / `en` (para correos) |
-| rol | varchar(15) | NN, DEF 'VISITANTE' | Ver `rol_usuario` |
-| estado | varchar(25) | NN, DEF 'PENDIENTE_VERIFICACION' | Ver `estado_usuario` |
-| email_verificado | boolean | NN, DEF false | Si confirmó su correo |
-| ultimo_acceso | timestamptz | | Último inicio de sesión |
-| creado_en | timestamptz | NN, DEF now() | Alta |
-| actualizado_en | timestamptz | NN, DEF now() | Última modificación |
-| eliminado_en | timestamptz | | Borrado lógico |
+| first_name | varchar(80) | NN | Nombres |
+| last_name | varchar(80) | NN | Apellidos |
+| phone | varchar(20) | | Teléfono de contacto |
+| photo_url | varchar(500) | | Foto de perfil (MinIO) |
+| preferred_language | varchar(5) | DEF 'es' | `es` / `en` (para correos) |
+| role | varchar(15) | NN, DEF 'VISITANTE' | Ver `rol_usuario` |
+| status | varchar(25) | NN, DEF 'PENDIENTE_VERIFICACION' | Ver `estado_usuario` |
+| email_verified | boolean | NN, DEF false | Si confirmó su correo |
+| last_login_at | timestamptz | | Último inicio de sesión |
+| created_at | timestamptz | NN, DEF now() | Alta |
+| updated_at | timestamptz | NN, DEF now() | Última modificación |
+| deleted_at | timestamptz | | Borrado lógico |
 
-### 5.4 `token_usuario`
+### 5.4 `user_token`
 Tokens de un solo uso o de larga duración (verificación de correo, recuperación de contraseña, refresh token).
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | uuid | PK | Identificador |
-| usuario_id | uuid | FK → usuario.id, NN | Dueño del token |
-| tipo | varchar(20) | NN | Ver `tipo_token` |
+| user_id | uuid | FK → app_user.id, NN | Dueño del token |
+| type | varchar(20) | NN | Ver `tipo_token` |
 | token_hash | varchar(255) | NN, UQ | Hash del token (no se guarda en claro) |
-| expira_en | timestamptz | NN | Vencimiento |
-| usado_en | timestamptz | | Cuándo se consumió / revocó |
-| creado_en | timestamptz | NN, DEF now() | Creación |
+| expires_at | timestamptz | NN | Vencimiento |
+| used_at | timestamptz | | Cuándo se consumió / revocó |
+| created_at | timestamptz | NN, DEF now() | Creación |
 
-### 5.5 `empresa`
+### 5.5 `company`
 Negocio u organización de un operador que ofrece experiencias.
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | uuid | PK | Identificador |
-| operador_id | uuid | FK → usuario.id, NN | Usuario con rol `OPERADOR` responsable |
-| nombre_comercial | varchar(150) | NN | Nombre visible |
-| razon_social | varchar(200) | | Nombre legal (opcional) |
-| descripcion | text | | Presentación de la empresa |
-| email_contacto | varchar(150) | | Correo público |
-| telefono_contacto | varchar(20) | | Teléfono público |
+| operator_id | uuid | FK → app_user.id, NN | Usuario con rol `OPERADOR` responsable |
+| trade_name | varchar(150) | NN | Nombre visible |
+| legal_name | varchar(200) | | Nombre legal (opcional) |
+| description | text | | Presentación de la empresa |
+| contact_email | varchar(150) | | Correo público |
+| contact_phone | varchar(20) | | Teléfono público |
 | whatsapp | varchar(20) | | WhatsApp |
-| sitio_web | varchar(300) | | Sitio web / redes |
+| website | varchar(300) | | Sitio web / redes |
 | logo_url | varchar(500) | | Logo (MinIO) |
-| municipio_id | int | FK → municipio.id | Ubicación de la sede |
-| direccion | varchar(300) | | Dirección escrita |
-| estado | varchar(15) | NN, DEF 'PENDIENTE' | Ver `estado_empresa` |
-| motivo_rechazo | varchar(500) | | Motivo si fue rechazada/suspendida |
-| aprobada_por | uuid | FK → usuario.id | Admin que decidió |
-| aprobada_en | timestamptz | | Fecha de decisión |
-| creado_en / actualizado_en | timestamptz | NN, DEF now() | Auditoría básica |
-| eliminado_en | timestamptz | | Borrado lógico |
+| municipality_id | int | FK → municipality.id | Ubicación de la sede |
+| address | varchar(300) | | Dirección escrita |
+| status | varchar(15) | NN, DEF 'PENDIENTE' | Ver `estado_empresa` |
+| rejection_reason | varchar(500) | | Motivo si fue rechazada/suspendida |
+| approved_by | uuid | FK → app_user.id | Admin que decidió |
+| approved_at | timestamptz | | Fecha de decisión |
+| created_at / updated_at | timestamptz | NN, DEF now() | Auditoría básica |
+| deleted_at | timestamptz | | Borrado lógico |
 
-### 5.6 `categoria`
+### 5.6 `category`
 Tipos de experiencia usados en el filtro (Comida, Playa, Montaña, Surf, Caminata, Museo, Parque, Paseo en lancha…).
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | int | PK | Identificador |
-| nombre | varchar(60) | NN, UQ | Nombre visible |
+| name | varchar(60) | NN, UQ | Nombre visible |
 | slug | varchar(80) | NN, UQ | Para URLs (`surf`, `caminata`) |
-| descripcion | varchar(300) | | Descripción breve |
-| icono | varchar(50) | | Nombre del icono en el frontend |
-| activa | boolean | NN, DEF true | Si se muestra |
-| orden | smallint | DEF 0 | Orden en filtros |
+| description | varchar(300) | | Descripción breve |
+| icon | varchar(50) | | Nombre del icono en el frontend |
+| is_active | boolean | NN, DEF true | Si se muestra |
+| sort_order | smallint | DEF 0 | Orden en filtros |
 
-### 5.7 `experiencia`
+### 5.7 `experience`
 Servicio/actividad publicada por una empresa. Entidad central del catálogo.
 
 | Campo                      | Tipo          | Restricciones         | Descripción                                        |
 | -------------------------- | ------------- | --------------------- | -------------------------------------------------- |
 | id                         | uuid          | PK                    | Identificador                                      |
-| empresa_id                 | uuid          | FK → empresa.id, NN   | Empresa que la ofrece                              |
-| titulo                     | varchar(150)  | NN                    | Título                                             |
+| company_id                 | uuid          | FK → company.id, NN   | Empresa que la ofrece                              |
+| title                     | varchar(150)  | NN                    | Título                                             |
 | slug                       | varchar(180)  | NN, UQ                | URL amigable                                       |
-| descripcion_corta          | varchar(300)  | NN                    | Resumen para tarjetas                              |
-| descripcion                | text          | NN                    | Descripción completa                               |
-| incluye                    | text          |                       | Qué incluye                                        |
-| no_incluye                 | text          |                       | Qué no incluye                                     |
-| que_llevar                 | text          |                       | Recomendaciones                                    |
-| precio                     | numeric(10,2) | NN, CHECK ≥ 0         | Precio por persona (USD)                           |
-| moneda                     | char(3)       | NN, DEF 'USD'         | Moneda                                             |
-| duracion_minutos           | int           | CHECK > 0             | Duración                                           |
-| dificultad                 | varchar(10)   |                       | Ver `dificultad`                                   |
-| edad_minima                | smallint      |                       | Restricción de edad                                |
-| idioma_servicio            | varchar(50)   |                       | Idiomas de la atención                             |
-| min_personas               | smallint      | NN, DEF 1             | Mínimo por reserva                                 |
-| max_personas               | smallint      | NN, DEF 10            | Máximo por reserva                                 |
-| municipio_id               | int           | FK → municipio.id, NN | Ubicación (filtro por depto/municipio)             |
-| direccion_referencia       | varchar(300)  |                       | Punto de encuentro / indicaciones                  |
-| latitud                    | numeric(9,6)  | NN, CHECK -90..90     | Coordenada para el mapa                            |
-| longitud                   | numeric(9,6)  | NN, CHECK -180..180   | Coordenada para el mapa                            |
-| confirmacion_automatica    | boolean       | NN, DEF false         | Si la reserva nace `CONFIRMADA`                    |
-| politica_cancelacion_horas | smallint      | NN, DEF 24            | Horas previas mínimas para cancelar                |
-| estado                     | varchar(20)   | NN, DEF 'BORRADOR'    | Ver `estado_experiencia`                           |
-| motivo_rechazo             | varchar(500)  |                       | Si el admin la rechaza                             |
-| calificacion_promedio      | numeric(2,1)  | NN, DEF 0             | Desnormalizado (0–5)                               |
-| total_resenas              | int           | NN, DEF 0             | Desnormalizado                                     |
-| busqueda                   | tsvector      |                       | Columna generada para full-text (config `spanish`) |
-| publicada_en               | timestamptz   |                       | Fecha de publicación                               |
-| creado_en / actualizado_en | timestamptz   | NN, DEF now()         | Auditoría básica                                   |
-| eliminado_en               | timestamptz   |                       | Borrado lógico                                     |
+| short_description          | varchar(300)  | NN                    | Resumen para tarjetas                              |
+| description                | text          | NN                    | Descripción completa                               |
+| includes                    | text          |                       | Qué incluye                                        |
+| excludes                 | text          |                       | Qué no incluye                                     |
+| what_to_bring                 | text          |                       | Recomendaciones                                    |
+| price                     | numeric(10,2) | NN, CHECK ≥ 0         | Precio por persona (USD)                           |
+| currency                     | char(3)       | NN, DEF 'USD'         | Moneda                                             |
+| duration_minutes           | int           | CHECK > 0             | Duración                                           |
+| difficulty                 | varchar(10)   |                       | Ver `dificultad`                                   |
+| min_age                | smallint      |                       | Restricción de edad                                |
+| service_language            | varchar(50)   |                       | Idiomas de la atención                             |
+| min_people               | smallint      | NN, DEF 1             | Mínimo por reserva                                 |
+| max_people               | smallint      | NN, DEF 10            | Máximo por reserva                                 |
+| municipality_id               | int           | FK → municipality.id, NN | Ubicación (filtro por depto/municipio)             |
+| reference_address       | varchar(300)  |                       | Punto de encuentro / indicaciones                  |
+| latitude                    | numeric(9,6)  | NN, CHECK -90..90     | Coordenada para el mapa                            |
+| longitude                   | numeric(9,6)  | NN, CHECK -180..180   | Coordenada para el mapa                            |
+| auto_confirmation    | boolean       | NN, DEF false         | Si la reserva nace `CONFIRMADA`                    |
+| cancellation_policy_hours | smallint      | NN, DEF 24            | Horas previas mínimas para cancelar                |
+| status                     | varchar(20)   | NN, DEF 'BORRADOR'    | Ver `estado_experiencia`                           |
+| rejection_reason             | varchar(500)  |                       | Si el admin la rechaza                             |
+| average_rating      | numeric(2,1)  | NN, DEF 0             | Desnormalizado (0–5)                               |
+| total_reviews              | int           | NN, DEF 0             | Desnormalizado                                     |
+| search_vector                   | tsvector      |                       | Columna generada para full-text (config `spanish`) |
+| published_at               | timestamptz   |                       | Fecha de publicación                               |
+| created_at / updated_at | timestamptz   | NN, DEF now()         | Auditoría básica                                   |
+| deleted_at               | timestamptz   |                       | Borrado lógico                                     |
 
-### 5.8 `experiencia_categoria`
+### 5.8 `experience_category`
 Relación N:M entre experiencias y categorías (una experiencia puede ser "Playa" y "Surf").
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| experiencia_id | uuid | PK compuesta, FK → experiencia.id | |
-| categoria_id | int | PK compuesta, FK → categoria.id | |
-| es_principal | boolean | NN, DEF false | Categoría principal (una por experiencia) |
+| experience_id | uuid | PK compuesta, FK → experience.id | |
+| category_id | int | PK compuesta, FK → category.id | |
+| is_primary | boolean | NN, DEF false | Categoría principal (una por experiencia) |
 
-### 5.9 `experiencia_imagen`
+### 5.9 `experience_image`
 Galería de fotos de cada experiencia.
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | uuid | PK | Identificador |
-| experiencia_id | uuid | FK → experiencia.id, NN | Experiencia |
-| clave_objeto | varchar(300) | NN | Clave del archivo en MinIO |
+| experience_id | uuid | FK → experience.id, NN | Experiencia |
+| object_key | varchar(300) | NN | Clave del archivo en MinIO |
 | url | varchar(500) | NN | URL pública de la imagen |
-| url_miniatura | varchar(500) | | URL de la miniatura |
-| texto_alternativo | varchar(200) | | Accesibilidad (alt) |
-| orden | smallint | NN, DEF 0 | Posición en la galería |
-| es_portada | boolean | NN, DEF false | Imagen principal |
-| creado_en | timestamptz | NN, DEF now() | Subida |
+| thumbnail_url | varchar(500) | | URL de la miniatura |
+| alt_text | varchar(200) | | Accesibilidad (alt) |
+| sort_order | smallint | NN, DEF 0 | Posición en la galería |
+| is_cover | boolean | NN, DEF false | Imagen principal |
+| created_at | timestamptz | NN, DEF now() | Subida |
 
-### 5.10 `experiencia_horario`
+### 5.10 `experience_schedule`
 Plantilla semanal: horarios de atención/salida de la experiencia. Sirve para el filtro por horario y para generar disponibilidad.
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | uuid | PK | Identificador |
-| experiencia_id | uuid | FK → experiencia.id, NN | Experiencia |
-| dia_semana | smallint | NN, CHECK 1..7 | 1 = lunes … 7 = domingo |
-| hora_inicio | time | NN | Inicio |
-| hora_fin | time | NN, CHECK > hora_inicio | Fin |
-| cupos_por_defecto | smallint | NN, CHECK > 0 | Cupos para cada salida generada |
-| activo | boolean | NN, DEF true | Si se usa al generar |
-| | | UQ(experiencia_id, dia_semana, hora_inicio) | Evita duplicados |
+| experience_id | uuid | FK → experience.id, NN | Experiencia |
+| day_of_week | smallint | NN, CHECK 1..7 | 1 = lunes … 7 = domingo |
+| start_time | time | NN | Inicio |
+| end_time | time | NN, CHECK > start_time | Fin |
+| default_capacity | smallint | NN, CHECK > 0 | Cupos para cada salida generada |
+| is_active | boolean | NN, DEF true | Si se usa al generar |
+| | | UQ(experience_id, day_of_week, start_time) | Evita duplicados |
 
-### 5.11 `disponibilidad`
+### 5.11 `availability`
 Instancia concreta de una salida/turno en una fecha, con control de cupos. **Es la tabla sobre la que se reserva.**
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | uuid | PK | Identificador |
-| experiencia_id | uuid | FK → experiencia.id, NN | Experiencia |
-| horario_id | uuid | FK → experiencia_horario.id | Plantilla de origen (null si se creó manual) |
-| fecha | date | NN | Día |
-| hora_inicio | time | NN | Inicio |
-| hora_fin | time | NN | Fin |
-| cupos_totales | smallint | NN, CHECK ≥ 0 | Capacidad |
-| cupos_reservados | smallint | NN, DEF 0, CHECK ≥ 0 | Ocupados (personas) |
-| precio_especial | numeric(10,2) | | Precio distinto al base (temporada) |
-| estado | varchar(10) | NN, DEF 'ABIERTA' | Ver `estado_disponibilidad` |
-| | | CHECK (cupos_reservados <= cupos_totales) | **Evita sobreventa** |
-| | | UQ(experiencia_id, fecha, hora_inicio) | Un turno por fecha/hora |
+| experience_id | uuid | FK → experience.id, NN | Experiencia |
+| schedule_id | uuid | FK → experience_schedule.id | Plantilla de origen (null si se creó manual) |
+| date | date | NN | Día |
+| start_time | time | NN | Inicio |
+| end_time | time | NN | Fin |
+| total_capacity | smallint | NN, CHECK ≥ 0 | Capacidad |
+| reserved_capacity | smallint | NN, DEF 0, CHECK ≥ 0 | Ocupados (personas) |
+| special_price | numeric(10,2) | | Precio distinto al base (temporada) |
+| status | varchar(10) | NN, DEF 'ABIERTA' | Ver `estado_disponibilidad` |
+| | | CHECK (reserved_capacity <= total_capacity) | **Evita sobreventa** |
+| | | UQ(experience_id, date, start_time) | Un turno por fecha/hora |
 | version | int | NN, DEF 0 | Control de concurrencia optimista (EF Core `RowVersion`) |
 
-### 5.12 `reserva`
+### 5.12 `reservation`
 Reserva de un turista sobre una disponibilidad.
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | uuid | PK | Identificador |
-| codigo | varchar(20) | NN, UQ | Código legible (ej. `RSV-2026-000123`) |
-| visitante_id | uuid | FK → usuario.id, NN | Turista que reserva |
-| disponibilidad_id | uuid | FK → disponibilidad.id, NN | Fecha/horario reservado |
-| cantidad_personas | smallint | NN, CHECK > 0 | Personas |
-| precio_unitario | numeric(10,2) | NN | Precio congelado por persona |
-| total | numeric(10,2) | NN | `precio_unitario × cantidad_personas` |
-| estado | varchar(15) | NN, DEF 'PENDIENTE' | Ver `estado_reserva` |
-| estado_pago | varchar(20) | NN, DEF 'PENDIENTE' | Ver `estado_pago` (simulado) |
-| nombre_contacto | varchar(150) | NN | Contacto en la reserva |
-| telefono_contacto | varchar(20) | NN | Teléfono |
-| notas_visitante | varchar(500) | | Comentarios del turista |
-| motivo_cancelacion | varchar(500) | | Si fue cancelada/rechazada |
-| cancelada_por | uuid | FK → usuario.id | Quién canceló/rechazó |
-| creada_en | timestamptz | NN, DEF now() | Creación |
-| confirmada_en | timestamptz | | Confirmación |
-| cancelada_en | timestamptz | | Cancelación |
-| completada_en | timestamptz | | Marcada como completada |
-| actualizada_en | timestamptz | NN, DEF now() | Última modificación |
+| code | varchar(20) | NN, UQ | Código legible (ej. `RSV-2026-000123`) |
+| visitor_id | uuid | FK → app_user.id, NN | Turista que reserva |
+| availability_id | uuid | FK → availability.id, NN | Fecha/horario reservado |
+| people_count | smallint | NN, CHECK > 0 | Personas |
+| unit_price | numeric(10,2) | NN | Precio congelado por persona |
+| total | numeric(10,2) | NN | `unit_price × people_count` |
+| status | varchar(15) | NN, DEF 'PENDIENTE' | Ver `estado_reserva` |
+| payment_status | varchar(20) | NN, DEF 'PENDIENTE' | Ver `estado_pago` (simulado) |
+| contact_name | varchar(150) | NN | Contacto en la reserva |
+| contact_phone | varchar(20) | NN | Teléfono |
+| visitor_notes | varchar(500) | | Comentarios del turista |
+| cancellation_reason | varchar(500) | | Si fue cancelada/rechazada |
+| cancelled_by | uuid | FK → app_user.id | Quién canceló/rechazó |
+| created_at | timestamptz | NN, DEF now() | Creación |
+| confirmed_at | timestamptz | | Confirmación |
+| cancelled_at | timestamptz | | Cancelación |
+| completed_at | timestamptz | | Marcada como completada |
+| updated_at | timestamptz | NN, DEF now() | Última modificación |
 
-### 5.13 `reserva_historial`
+### 5.13 `reservation_history`
 Línea de tiempo de estados de cada reserva (alimenta "historial y estados" del turista).
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | uuid | PK | Identificador |
-| reserva_id | uuid | FK → reserva.id, NN | Reserva |
-| estado_anterior | varchar(15) | | Null en la creación |
-| estado_nuevo | varchar(15) | NN | Estado resultante |
-| cambiado_por | uuid | FK → usuario.id | Quién lo hizo (null si fue el sistema) |
-| comentario | varchar(500) | | Nota u observación |
-| creado_en | timestamptz | NN, DEF now() | Momento del cambio |
+| reservation_id | uuid | FK → reservation.id, NN | Reserva |
+| previous_status | varchar(15) | | Null en la creación |
+| new_status | varchar(15) | NN | Estado resultante |
+| changed_by | uuid | FK → app_user.id | Quién lo hizo (null si fue el sistema) |
+| comment | varchar(500) | | Nota u observación |
+| created_at | timestamptz | NN, DEF now() | Momento del cambio |
 
-### 5.14 `resena`
+### 5.14 `review`
 Reseña y calificación con estrellas, ligada a una reserva completada.
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | uuid | PK | Identificador |
-| reserva_id | uuid | FK → reserva.id, NN, **UQ** | Una reseña por reserva |
-| experiencia_id | uuid | FK → experiencia.id, NN | Experiencia reseñada (facilita consultas) |
-| visitante_id | uuid | FK → usuario.id, NN | Autor |
-| calificacion | smallint | NN, CHECK 1..5 | Estrellas |
-| titulo | varchar(120) | | Título opcional |
-| comentario | text | | Texto |
-| estado | varchar(10) | NN, DEF 'VISIBLE' | Ver `estado_resena` |
-| respuesta_operador | text | | Respuesta pública de la empresa |
-| respondida_en | timestamptz | | Fecha de la respuesta |
-| respondida_por | uuid | FK → usuario.id | Operador que respondió |
-| creada_en / actualizada_en | timestamptz | NN, DEF now() | Auditoría básica |
+| reservation_id | uuid | FK → reservation.id, NN, **UQ** | Una reseña por reserva |
+| experience_id | uuid | FK → experience.id, NN | Experiencia reseñada (facilita consultas) |
+| visitor_id | uuid | FK → app_user.id, NN | Autor |
+| rating | smallint | NN, CHECK 1..5 | Estrellas |
+| title | varchar(120) | | Título opcional |
+| comment | text | | Texto |
+| status | varchar(10) | NN, DEF 'VISIBLE' | Ver `estado_resena` |
+| operator_reply | text | | Respuesta pública de la empresa |
+| replied_at | timestamptz | | Fecha de la respuesta |
+| replied_by | uuid | FK → app_user.id | Operador que respondió |
+| created_at / updated_at | timestamptz | NN, DEF now() | Auditoría básica |
 
-### 5.15 `favorito`
+### 5.15 `favorite`
 Experiencias guardadas por un turista.
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
-| usuario_id | uuid | PK compuesta, FK → usuario.id | Turista |
-| experiencia_id | uuid | PK compuesta, FK → experiencia.id | Experiencia |
-| creado_en | timestamptz | NN, DEF now() | Cuándo se guardó |
+| user_id | uuid | PK compuesta, FK → app_user.id | Turista |
+| experience_id | uuid | PK compuesta, FK → experience.id | Experiencia |
+| created_at | timestamptz | NN, DEF now() | Cuándo se guardó |
 
-### 5.16 `notificacion_correo`
+### 5.16 `email_notification`
 Registro/cola de correos enviados por el sistema (confirmación de reserva, verificación, etc.).
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | uuid | PK | Identificador |
-| usuario_id | uuid | FK → usuario.id | Destinatario (si es usuario) |
-| reserva_id | uuid | FK → reserva.id | Reserva relacionada (opcional) |
-| tipo | varchar(30) | NN | Ver `tipo_notificacion` |
-| destinatario | varchar(150) | NN | Correo destino |
-| asunto | varchar(200) | NN | Asunto |
-| cuerpo | text | NN | Contenido (HTML/texto) |
-| estado | varchar(10) | NN, DEF 'PENDIENTE' | Ver `estado_envio` |
-| intentos | smallint | NN, DEF 0 | Reintentos |
+| user_id | uuid | FK → app_user.id | Destinatario (si es usuario) |
+| reservation_id | uuid | FK → reservation.id | Reserva relacionada (opcional) |
+| type | varchar(30) | NN | Ver `tipo_notificacion` |
+| recipient | varchar(150) | NN | Correo destino |
+| subject | varchar(200) | NN | Asunto |
+| body | text | NN | Contenido (HTML/texto) |
+| status | varchar(10) | NN, DEF 'PENDIENTE' | Ver `estado_envio` |
+| attempts | smallint | NN, DEF 0 | Reintentos |
 | error | varchar(500) | | Último error |
-| creado_en | timestamptz | NN, DEF now() | Encolado |
-| enviado_en | timestamptz | | Envío exitoso |
+| created_at | timestamptz | NN, DEF now() | Encolado |
+| sent_at | timestamptz | | Envío exitoso |
 
-### 5.17 `log_auditoria`
+### 5.17 `audit_log`
 Bitácora de acciones sensibles para el administrador.
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | bigint | PK, identity | Identificador |
-| usuario_id | uuid | FK → usuario.id | Quién ejecutó (null = sistema) |
-| accion | varchar(50) | NN | Ej. `EMPRESA_APROBADA`, `USUARIO_BLOQUEADO` |
-| entidad | varchar(50) | NN | Tabla/entidad afectada |
-| entidad_id | varchar(50) | | ID del registro afectado |
-| detalle | jsonb | | Datos antes/después |
+| user_id | uuid | FK → app_user.id | Quién ejecutó (null = sistema) |
+| action | varchar(50) | NN | Ej. `EMPRESA_APROBADA`, `USUARIO_BLOQUEADO` |
+| entity | varchar(50) | NN | Tabla/entidad afectada |
+| entity_id | varchar(50) | | ID del registro afectado |
+| details | jsonb | | Datos antes/después |
 | ip | varchar(45) | | IP de origen |
-| creado_en | timestamptz | NN, DEF now() | Momento |
+| created_at | timestamptz | NN, DEF now() | Momento |
 
 ---
 
@@ -447,27 +447,27 @@ Bitácora de acciones sensibles para el administrador.
 
 | Origen | Cardinalidad | Destino | Descripción |
 |---|:-:|---|---|
-| departamento | 1 : N | municipio | Un departamento tiene varios municipios |
-| municipio | 1 : N | empresa | Sede de la empresa |
-| municipio | 1 : N | experiencia | Ubicación de la experiencia |
-| usuario (operador) | 1 : N | empresa | Un operador administra varias empresas |
-| usuario | 1 : N | token_usuario | Tokens de verificación/recuperación |
-| empresa | 1 : N | experiencia | Una empresa publica varias experiencias |
-| experiencia | N : M | categoria | A través de `experiencia_categoria` |
-| experiencia | 1 : N | experiencia_imagen | Galería |
-| experiencia | 1 : N | experiencia_horario | Plantilla semanal |
-| experiencia | 1 : N | disponibilidad | Turnos con fecha |
-| experiencia_horario | 1 : N | disponibilidad | Origen de turnos generados (opcional) |
-| usuario (visitante) | 1 : N | reserva | Historial de reservas |
-| disponibilidad | 1 : N | reserva | Varias reservas comparten cupos de un turno |
-| reserva | 1 : N | reserva_historial | Línea de tiempo de estados |
-| reserva | 1 : 0..1 | resena | Máx. una reseña por reserva |
-| experiencia | 1 : N | resena | Reseñas de la experiencia |
-| usuario (visitante) | 1 : N | resena | Autor de reseñas |
-| usuario ↔ experiencia | N : M | favorito | Favoritos |
-| usuario | 1 : N | notificacion_correo | Correos del usuario |
-| reserva | 1 : N | notificacion_correo | Correos de una reserva |
-| usuario | 1 : N | log_auditoria | Acciones registradas |
+| department | 1 : N | municipality | Un departamento tiene varios municipios |
+| municipality | 1 : N | company | Sede de la empresa |
+| municipality | 1 : N | experience | Ubicación de la experiencia |
+| app_user (operador) | 1 : N | company | Un operador administra varias empresas |
+| app_user | 1 : N | user_token | Tokens de verificación/recuperación |
+| company | 1 : N | experience | Una empresa publica varias experiencias |
+| experience | N : M | category | A través de `experience_category` |
+| experience | 1 : N | experience_image | Galería |
+| experience | 1 : N | experience_schedule | Plantilla semanal |
+| experience | 1 : N | availability | Turnos con fecha |
+| experience_schedule | 1 : N | availability | Origen de turnos generados (opcional) |
+| app_user (visitante) | 1 : N | reservation | Historial de reservas |
+| availability | 1 : N | reservation | Varias reservas comparten cupos de un turno |
+| reservation | 1 : N | reservation_history | Línea de tiempo de estados |
+| reservation | 1 : 0..1 | review | Máx. una reseña por reserva |
+| experience | 1 : N | review | Reseñas de la experiencia |
+| app_user (visitante) | 1 : N | review | Autor de reseñas |
+| app_user ↔ experience | N : M | favorite | Favoritos |
+| app_user | 1 : N | email_notification | Correos del usuario |
+| reservation | 1 : N | email_notification | Correos de una reserva |
+| app_user | 1 : N | audit_log | Acciones registradas |
 
 ---
 
@@ -475,48 +475,48 @@ Bitácora de acciones sensibles para el administrador.
 
 | Tabla | Índice / restricción | Propósito |
 |---|---|---|
-| usuario | UQ(email) | Login único |
-| experiencia | GIN(busqueda) | Búsqueda full-text rápida |
-| experiencia | (estado, municipio_id), (estado, precio), (estado, calificacion_promedio) | Filtros y ordenamientos del catálogo |
-| experiencia | UQ(slug) | URLs amigables |
-| experiencia_categoria | (categoria_id, experiencia_id) | Filtrar por categoría |
-| experiencia_horario | (experiencia_id, dia_semana) | Filtro por horario de atención |
-| disponibilidad | UQ(experiencia_id, fecha, hora_inicio) | Un turno por fecha/hora |
-| disponibilidad | (fecha, estado) y (experiencia_id, fecha) | Consulta de cupos y calendario |
-| disponibilidad | CHECK(cupos_reservados <= cupos_totales) | **Sin sobreventa** |
-| reserva | UQ(codigo); (visitante_id, creada_en DESC); (disponibilidad_id, estado) | "Mis reservas" y panel del operador |
-| resena | UQ(reserva_id); (experiencia_id, estado, creada_en DESC) | Una reseña por reserva y listado en la ficha |
-| notificacion_correo | (estado, creado_en) | Cola de envío / reintentos |
-| municipio | UQ(departamento_id, nombre) | Sin duplicados |
+| app_user | UQ(email) | Login único |
+| experience | GIN(search_vector) | Búsqueda full-text rápida |
+| experience | (status, municipality_id), (status, price), (status, average_rating) | Filtros y ordenamientos del catálogo |
+| experience | UQ(slug) | URLs amigables |
+| experience_category | (category_id, experience_id) | Filtrar por categoría |
+| experience_schedule | (experience_id, day_of_week) | Filtro por horario de atención |
+| availability | UQ(experience_id, date, start_time) | Un turno por fecha/hora |
+| availability | (date, status) y (experience_id, date) | Consulta de cupos y calendario |
+| availability | CHECK(reserved_capacity <= total_capacity) | **Sin sobreventa** |
+| reservation | UQ(code); (visitor_id, created_at DESC); (availability_id, status) | "Mis reservas" y panel del operador |
+| review | UQ(reservation_id); (experience_id, status, created_at DESC) | Una reseña por reserva y listado en la ficha |
+| email_notification | (status, created_at) | Cola de envío / reintentos |
+| municipality | UQ(department_id, name) | Sin duplicados |
 
 Ejemplo de columna de búsqueda (EF Core / SQL):
 
 ```sql
-ALTER TABLE experiencia
-ADD COLUMN busqueda tsvector GENERATED ALWAYS AS (
-  setweight(to_tsvector('spanish', coalesce(titulo, '')), 'A') ||
-  setweight(to_tsvector('spanish', coalesce(descripcion_corta, '')), 'B') ||
-  setweight(to_tsvector('spanish', coalesce(descripcion, '')), 'C')
+ALTER TABLE experience
+ADD COLUMN search_vector tsvector GENERATED ALWAYS AS (
+  setweight(to_tsvector('spanish', coalesce(title, '')), 'A') ||
+  setweight(to_tsvector('spanish', coalesce(short_description, '')), 'B') ||
+  setweight(to_tsvector('spanish', coalesce(description, '')), 'C')
 ) STORED;
 
-CREATE INDEX ix_experiencia_busqueda ON experiencia USING GIN (busqueda);
+CREATE INDEX ix_experience_search_vector ON experience USING GIN (search_vector);
 ```
 
 Ejemplo del bloqueo anti-sobreventa al reservar (dentro de una transacción):
 
 ```sql
-SELECT cupos_totales, cupos_reservados, estado
-FROM disponibilidad
-WHERE id = @disponibilidad_id
+SELECT total_capacity, reserved_capacity, status
+FROM availability
+WHERE id = @availability_id
 FOR UPDATE;
 
--- Si estado = 'ABIERTA' y cupos_totales - cupos_reservados >= @personas:
-UPDATE disponibilidad
-SET cupos_reservados = cupos_reservados + @personas
-WHERE id = @disponibilidad_id;
+-- Si status = 'ABIERTA' y total_capacity - reserved_capacity >= @personas:
+UPDATE availability
+SET reserved_capacity = reserved_capacity + @personas
+WHERE id = @availability_id;
 
-INSERT INTO reserva (...) VALUES (...);
-INSERT INTO reserva_historial (...) VALUES (...);
+INSERT INTO reservation (...) VALUES (...);
+INSERT INTO reservation_history (...) VALUES (...);
 ```
 
 ---
@@ -525,238 +525,238 @@ INSERT INTO reserva_historial (...) VALUES (...);
 
 ```mermaid
 erDiagram
-    departamento ||--o{ municipio : "tiene"
-    municipio ||--o{ empresa : "sede de"
-    municipio ||--o{ experiencia : "ubica"
-    usuario ||--o{ empresa : "opera"
-    usuario ||--o{ token_usuario : "posee"
-    empresa ||--o{ experiencia : "ofrece"
-    experiencia ||--o{ experiencia_categoria : "clasificada en"
-    categoria ||--o{ experiencia_categoria : "agrupa"
-    experiencia ||--o{ experiencia_imagen : "galeria"
-    experiencia ||--o{ experiencia_horario : "plantilla semanal"
-    experiencia ||--o{ disponibilidad : "turnos"
-    experiencia_horario |o--o{ disponibilidad : "genera"
-    usuario ||--o{ reserva : "realiza"
-    disponibilidad ||--o{ reserva : "recibe"
-    reserva ||--o{ reserva_historial : "registra"
-    reserva ||--o| resena : "origina"
-    usuario ||--o{ resena : "escribe"
-    experiencia ||--o{ resena : "recibe"
-    usuario ||--o{ favorito : "guarda"
-    experiencia ||--o{ favorito : "es guardada"
-    usuario ||--o{ notificacion_correo : "recibe"
-    reserva |o--o{ notificacion_correo : "origina"
-    usuario |o--o{ log_auditoria : "ejecuta"
+    department ||--o{ municipality : "tiene"
+    municipality ||--o{ company : "sede de"
+    municipality ||--o{ experience : "ubica"
+    app_user ||--o{ company : "opera"
+    app_user ||--o{ user_token : "posee"
+    company ||--o{ experience : "ofrece"
+    experience ||--o{ experience_category : "clasificada en"
+    category ||--o{ experience_category : "agrupa"
+    experience ||--o{ experience_image : "galeria"
+    experience ||--o{ experience_schedule : "plantilla semanal"
+    experience ||--o{ availability : "turnos"
+    experience_schedule |o--o{ availability : "genera"
+    app_user ||--o{ reservation : "realiza"
+    availability ||--o{ reservation : "recibe"
+    reservation ||--o{ reservation_history : "registra"
+    reservation ||--o| review : "origina"
+    app_user ||--o{ review : "escribe"
+    experience ||--o{ review : "recibe"
+    app_user ||--o{ favorite : "guarda"
+    experience ||--o{ favorite : "es guardada"
+    app_user ||--o{ email_notification : "recibe"
+    reservation |o--o{ email_notification : "origina"
+    app_user |o--o{ audit_log : "ejecuta"
 
-    departamento {
+    department {
         smallint id PK
-        string nombre UK
+        string name UK
     }
-    municipio {
+    municipality {
         int id PK
-        smallint departamento_id FK
-        string nombre
+        smallint department_id FK
+        string name
     }
-    usuario {
+    app_user {
         uuid id PK
         string email UK
         string password_hash
-        string nombre
-        string apellido
-        string telefono
-        string foto_url
-        string idioma_preferido
-        string rol
-        string estado
-        boolean email_verificado
-        timestamptz ultimo_acceso
-        timestamptz creado_en
-        timestamptz actualizado_en
-        timestamptz eliminado_en
+        string first_name
+        string last_name
+        string phone
+        string photo_url
+        string preferred_language
+        string role
+        string status
+        boolean email_verified
+        timestamptz last_login_at
+        timestamptz created_at
+        timestamptz updated_at
+        timestamptz deleted_at
     }
-    token_usuario {
+    user_token {
         uuid id PK
-        uuid usuario_id FK
-        string tipo
+        uuid user_id FK
+        string type
         string token_hash UK
-        timestamptz expira_en
-        timestamptz usado_en
-        timestamptz creado_en
+        timestamptz expires_at
+        timestamptz used_at
+        timestamptz created_at
     }
-    empresa {
+    company {
         uuid id PK
-        uuid operador_id FK
-        string nombre_comercial
-        string razon_social
-        text descripcion
-        string email_contacto
-        string telefono_contacto
+        uuid operator_id FK
+        string trade_name
+        string legal_name
+        text description
+        string contact_email
+        string contact_phone
         string whatsapp
-        string sitio_web
+        string website
         string logo_url
-        int municipio_id FK
-        string direccion
-        string estado
-        string motivo_rechazo
-        uuid aprobada_por FK
-        timestamptz aprobada_en
-        timestamptz creado_en
-        timestamptz eliminado_en
+        int municipality_id FK
+        string address
+        string status
+        string rejection_reason
+        uuid approved_by FK
+        timestamptz approved_at
+        timestamptz created_at
+        timestamptz deleted_at
     }
-    categoria {
+    category {
         int id PK
-        string nombre UK
+        string name UK
         string slug UK
-        string descripcion
-        string icono
-        boolean activa
-        smallint orden
+        string description
+        string icon
+        boolean is_active
+        smallint sort_order
     }
-    experiencia {
+    experience {
         uuid id PK
-        uuid empresa_id FK
-        string titulo
+        uuid company_id FK
+        string title
         string slug UK
-        string descripcion_corta
-        text descripcion
-        text incluye
-        text no_incluye
-        text que_llevar
-        decimal precio
-        string moneda
-        int duracion_minutos
-        string dificultad
-        smallint edad_minima
-        string idioma_servicio
-        smallint min_personas
-        smallint max_personas
-        int municipio_id FK
-        string direccion_referencia
-        decimal latitud
-        decimal longitud
-        boolean confirmacion_automatica
-        smallint politica_cancelacion_horas
-        string estado
-        string motivo_rechazo
-        decimal calificacion_promedio
-        int total_resenas
-        tsvector busqueda
-        timestamptz publicada_en
-        timestamptz creado_en
-        timestamptz eliminado_en
+        string short_description
+        text description
+        text includes
+        text excludes
+        text what_to_bring
+        decimal price
+        string currency
+        int duration_minutes
+        string difficulty
+        smallint min_age
+        string service_language
+        smallint min_people
+        smallint max_people
+        int municipality_id FK
+        string reference_address
+        decimal latitude
+        decimal longitude
+        boolean auto_confirmation
+        smallint cancellation_policy_hours
+        string status
+        string rejection_reason
+        decimal average_rating
+        int total_reviews
+        tsvector search_vector
+        timestamptz published_at
+        timestamptz created_at
+        timestamptz deleted_at
     }
-    experiencia_categoria {
-        uuid experiencia_id PK
-        int categoria_id PK
-        boolean es_principal
+    experience_category {
+        uuid experience_id PK
+        int category_id PK
+        boolean is_primary
     }
-    experiencia_imagen {
+    experience_image {
         uuid id PK
-        uuid experiencia_id FK
-        string clave_objeto
+        uuid experience_id FK
+        string object_key
         string url
-        string url_miniatura
-        string texto_alternativo
-        smallint orden
-        boolean es_portada
-        timestamptz creado_en
+        string thumbnail_url
+        string alt_text
+        smallint sort_order
+        boolean is_cover
+        timestamptz created_at
     }
-    experiencia_horario {
+    experience_schedule {
         uuid id PK
-        uuid experiencia_id FK
-        smallint dia_semana
-        time hora_inicio
-        time hora_fin
-        smallint cupos_por_defecto
-        boolean activo
+        uuid experience_id FK
+        smallint day_of_week
+        time start_time
+        time end_time
+        smallint default_capacity
+        boolean is_active
     }
-    disponibilidad {
+    availability {
         uuid id PK
-        uuid experiencia_id FK
-        uuid horario_id FK
-        date fecha
-        time hora_inicio
-        time hora_fin
-        smallint cupos_totales
-        smallint cupos_reservados
-        decimal precio_especial
-        string estado
+        uuid experience_id FK
+        uuid schedule_id FK
+        date date
+        time start_time
+        time end_time
+        smallint total_capacity
+        smallint reserved_capacity
+        decimal special_price
+        string status
         int version
     }
-    reserva {
+    reservation {
         uuid id PK
-        string codigo UK
-        uuid visitante_id FK
-        uuid disponibilidad_id FK
-        smallint cantidad_personas
-        decimal precio_unitario
+        string code UK
+        uuid visitor_id FK
+        uuid availability_id FK
+        smallint people_count
+        decimal unit_price
         decimal total
-        string estado
-        string estado_pago
-        string nombre_contacto
-        string telefono_contacto
-        string notas_visitante
-        string motivo_cancelacion
-        uuid cancelada_por FK
-        timestamptz creada_en
-        timestamptz confirmada_en
-        timestamptz cancelada_en
-        timestamptz completada_en
-        timestamptz actualizada_en
+        string status
+        string payment_status
+        string contact_name
+        string contact_phone
+        string visitor_notes
+        string cancellation_reason
+        uuid cancelled_by FK
+        timestamptz created_at
+        timestamptz confirmed_at
+        timestamptz cancelled_at
+        timestamptz completed_at
+        timestamptz updated_at
     }
-    reserva_historial {
+    reservation_history {
         uuid id PK
-        uuid reserva_id FK
-        string estado_anterior
-        string estado_nuevo
-        uuid cambiado_por FK
-        string comentario
-        timestamptz creado_en
+        uuid reservation_id FK
+        string previous_status
+        string new_status
+        uuid changed_by FK
+        string comment
+        timestamptz created_at
     }
-    resena {
+    review {
         uuid id PK
-        uuid reserva_id FK
-        uuid experiencia_id FK
-        uuid visitante_id FK
-        smallint calificacion
-        string titulo
-        text comentario
-        string estado
-        text respuesta_operador
-        timestamptz respondida_en
-        uuid respondida_por FK
-        timestamptz creada_en
-        timestamptz actualizada_en
+        uuid reservation_id FK
+        uuid experience_id FK
+        uuid visitor_id FK
+        smallint rating
+        string title
+        text comment
+        string status
+        text operator_reply
+        timestamptz replied_at
+        uuid replied_by FK
+        timestamptz created_at
+        timestamptz updated_at
     }
-    favorito {
-        uuid usuario_id PK
-        uuid experiencia_id PK
-        timestamptz creado_en
+    favorite {
+        uuid user_id PK
+        uuid experience_id PK
+        timestamptz created_at
     }
-    notificacion_correo {
+    email_notification {
         uuid id PK
-        uuid usuario_id FK
-        uuid reserva_id FK
-        string tipo
-        string destinatario
-        string asunto
-        text cuerpo
-        string estado
-        smallint intentos
+        uuid user_id FK
+        uuid reservation_id FK
+        string type
+        string recipient
+        string subject
+        text body
+        string status
+        smallint attempts
         string error
-        timestamptz creado_en
-        timestamptz enviado_en
+        timestamptz created_at
+        timestamptz sent_at
     }
-    log_auditoria {
+    audit_log {
         bigint id PK
-        uuid usuario_id FK
-        string accion
-        string entidad
-        string entidad_id
-        jsonb detalle
+        uuid user_id FK
+        string action
+        string entity
+        string entity_id
+        jsonb details
         string ip
-        timestamptz creado_en
+        timestamptz created_at
     }
 ```
 
@@ -765,10 +765,10 @@ erDiagram
 ## 9. Notas de implementación
 
 - **Visitante sin cuenta:** no tiene tabla; solo consume los endpoints públicos de lectura (`GET /experiencias`, `GET /experiencias/{slug}`, `GET /categorias`, `GET /municipios`).
-- **Generación de disponibilidad:** al guardar `experiencia_horario`, un servicio (o job programado) genera filas en `disponibilidad` para una ventana móvil (ej. 90 días). El operador puede bloquear fechas o editar cupos sin tocar la plantilla.
-- **Filtro por fecha:** una experiencia "tiene disponibilidad" si existe un `disponibilidad` con `estado = 'ABIERTA'`, la fecha pedida y `cupos_totales - cupos_reservados > 0`.
-- **Filtro por horario de atención:** usar `experiencia_horario` (día de la semana + rango de horas).
-- **Promedio de calificación:** recalcular `calificacion_promedio` y `total_resenas` en la misma transacción al crear/ocultar/editar una reseña.
-- **Correos:** insertar en `notificacion_correo` dentro de la transacción de la reserva y enviarlos con un servicio en segundo plano (`BackgroundService`) con reintentos. Así un fallo del correo no rompe la reserva.
+- **Generación de disponibilidad:** al guardar `experience_schedule`, un servicio (o job programado) genera filas en `availability` para una ventana móvil (ej. 90 días). El operador puede bloquear fechas o editar cupos sin tocar la plantilla.
+- **Filtro por fecha:** una experiencia "tiene disponibilidad" si existe un `availability` con `status = 'ABIERTA'`, la fecha pedida y `total_capacity - reserved_capacity > 0`.
+- **Filtro por horario de atención:** usar `experience_schedule` (día de la semana + rango de horas).
+- **Promedio de calificación:** recalcular `average_rating` y `total_reviews` en la misma transacción al crear/ocultar/editar una reseña.
+- **Correos:** insertar en `email_notification` dentro de la transacción de la reserva y enviarlos con un servicio en segundo plano (`BackgroundService`) con reintentos. Así un fallo del correo no rompe la reserva.
 - **Concurrencia:** además de `FOR UPDATE`, se puede usar `version` como token de concurrencia optimista en EF Core.
-- **Extensiones futuras (fuera del alcance actual):** tabla `pago` real con pasarela, cupones/descuentos, mensajería turista–operador, multi-idioma de contenido (`experiencia_traduccion`).
+- **Extensiones futuras (fuera del alcance actual):** tabla `payment` real con pasarela, cupones/descuentos, mensajería turista–operador, multi-idioma de contenido (`experience_translation`).
