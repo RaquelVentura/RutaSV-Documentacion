@@ -32,24 +32,25 @@ backend: .NET 10/ EF Core
 | Actor | ¿Tiene cuenta? | Rol en BD (`app_user.role`) | Alcance |
 |---|---|---|---|
 | Administrador | Sí | `ADMIN` | Control total del sistema |
-| Operador | Sí | `OPERADOR` | Gestiona sus empresas, experiencias, disponibilidad y reservas recibidas |
+| Operador | Sí | `OPERADOR` | Gestiona sus empresas, experiencias, disponibilidad y reservas recibidas. No existe registro directo: es un `VISITANTE` cuya solicitud (con documentos) aprobó el admin |
 | Visitante con cuenta (turista) | Sí | `VISITANTE` | Explora, reserva, cancela, reseña y ve su historial |
 | Visitante sin cuenta | No | — (no se guarda en BD) | Solo lectura del catálogo público |
 
 Matriz resumida:
 
-| Acción                                                        | Sin cuenta | Visitante | Operador |    Admin     |
-| ------------------------------------------------------------- | :--------: | :-------: | :------: | :----------: |
-| Ver y filtrar catálogo                                        |     Sí     |    Sí     |    Sí    |      Sí      |
-| Ver detalle (fotos, mapa, reseñas, horarios)                  |     Sí     |    Sí     |    Sí    |      Sí      |
-| Registrarse / iniciar sesión                                  |     Sí     |     —     |    —     |      —       |
-| Reservar, cancelar, ver "mis reservas"                        |     No     |    Sí     |    No    | Sí (gestión) |
-| Reseñar tras reserva completada                               |     No     |    Sí     |    No    |   moderar    |
-| Favoritos                                                     |     No     |    Sí     |    No    |      No      |
-| Crear/editar empresa y experiencias propias                   |     No     |    No     |    Sí    |  Sí (todas)  |
-| Gestionar disponibilidad y reservas de sus experiencias       |     No     |    No     |    Sí    |      Sí      |
-| Responder reseñas propias                                     |     No     |    No     |    Sí    |      Sí      |
-| Aprobar empresas/experiencias, gestionar usuarios y catálogos |     No     |    No     |    No    |      Sí      |
+| Acción                                                        | Sin cuenta | Visitante |              Operador              |    Admin     |
+| ------------------------------------------------------------- | :--------: | :-------: | :--------------------------------: | :----------: |
+| Ver y filtrar catálogo                                        |     Sí     |    Sí     |                 Sí                 |      Sí      |
+| Ver detalle (fotos, mapa, reseñas, horarios)                  |     Sí     |    Sí     |                 Sí                 |      Sí      |
+| Registrarse / iniciar sesión                                  |     Sí     |     —     |                 —                  |      —       |
+| Solicitar ser operador (empresa + documentos)                 |     No     |    Sí     |                 —                  |      —       |
+| Reservar, cancelar, ver "mis reservas"                        |     No     |    Sí     | Sí (cuando le reservan en persona) | Sí (gestión) |
+| Reseñar tras reserva completada                               |     No     |    Sí     |                 No                 |   moderar    |
+| Favoritos                                                     |     No     |    Sí     |                 No                 |      No      |
+| Crear/editar empresa y experiencias propias                   |     No     |    No     |                 Sí                 |  Sí (todas)  |
+| Gestionar disponibilidad y reservas de sus experiencias       |     No     |    No     |                 Sí                 |      Sí      |
+| Responder reseñas propias                                     |     No     |    No     |                 Sí                 |      Sí      |
+| Aprobar solicitudes de operador, empresas/experiencias, gestionar usuarios y catálogos |     No     |    No     |                 No                 |      Sí      |
 
 ---
 
@@ -82,11 +83,12 @@ Incluye todo lo anterior, más:
 | RF-V08 | Reseñar | Solo si la reserva está `COMPLETADA` y no existe reseña previa. Calificación 1–5 estrellas + comentario opcional. Actualiza promedio de la experiencia. |
 | RF-V09 | Editar/eliminar su reseña | Dentro de una ventana de tiempo configurable. |
 | RF-V10 | Favoritos | Guardar/quitar experiencias y ver su lista. |
+| RF-V11 | Solicitar ser operador | Desde su perfil, el visitante llena el formulario de la empresa (la misma de RF-O02) y adjunta documentos (foto del DUI, foto del negocio o servicio, enlace a redes u otro respaldo). Se crea una `operator_request` en estado `PENDIENTE`; hasta que el admin decida no puede publicar nada. Solo puede tener una solicitud activa. |
 
 ### 2.3 Operador
 | ID     | Funcionalidad                | Detalle                                                                                                                                                                                                                                                            |
 | ------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| RF-O01 | Registro de operador         | Cuenta con rol `OPERADOR` (creada por registro especial o por el admin).                                                                                                                                                                                           |
+| RF-O01 | Alta como operador           | No hay registro directo. Un visitante envía la solicitud de RF-V11; al aprobarla el admin, su rol pasa a `OPERADOR` y su empresa a `APROBADA`. También puede crearlo el admin directamente (RF-A01).                                                              |
 | RF-O02 | Gestionar empresas           | Crear/editar empresa: nombre comercial, descripción, contacto, logo, ubicación. Queda `PENDIENTE` hasta que el admin la apruebe. Un operador puede tener varias empresas.                                                                                          |
 | RF-O03 | CRUD de experiencias         | Título, descripción, categorías, precio, duración, ubicación (municipio + coordenadas + referencia), qué incluye, requisitos, políticas, cupo máximo por reserva. Estados: `BORRADOR` → `PENDIENTE_REVISION` → `PUBLICADA`/`RECHAZADA`; puede `PAUSAR` o archivar. |
 | RF-O04 | Galería de imágenes          | Subir varias fotos (MinIO), definir portada, orden y texto alternativo; se generan miniaturas.                                                                                                                                                                     |
@@ -97,12 +99,13 @@ Incluye todo lo anterior, más:
 | RF-O09 | Confirmación automática      | Opción por experiencia: si está activa, la reserva nace `CONFIRMADA`; si no, queda `PENDIENTE` hasta que el operador la confirme.                                                                                                                                  |
 | RF-O10 | Responder reseñas            | Una respuesta pública por reseña.                                                                                                                                                                                                                                  |
 | RF-O11 | Panel de métricas            | Reservas por estado, ingresos demo, calificación promedio, experiencias más reservadas.                                                                                                                                                                            |
+| RF-O12 | Reserva presencial           | El operador registra una reserva de un cliente que se inscribe en persona y no usa la plataforma (sin cuenta). Captura nombre, teléfono y, opcionalmente, correo; la reserva queda con `source = PRESENCIAL`, sin `visitor_id` y con `created_by` = el operador. Solo sobre sus propias experiencias y con las mismas validaciones de cupo.                         |
 
 ### 2.4 Administrador
 | ID | Funcionalidad | Detalle |
 |---|---|---|
 | RF-A01 | Gestión de usuarios | Listar, buscar, crear, editar, activar/suspender/bloquear, cambiar rol, forzar restablecimiento de contraseña. |
-| RF-A02 | Aprobación de empresas | Aprobar, rechazar (con motivo) o suspender empresas. |
+| RF-A02 | Aprobación de solicitudes de operador y empresas | Cola de `operator_request` filtrable por estado y antigüedad. Revisa los documentos y aprueba o rechaza (con motivo) en un solo paso: al aprobar, la empresa pasa a `APROBADA` y el usuario a `OPERADOR`. También puede suspender empresas. Los documentos solo los ve el admin. |
 | RF-A03 | Moderación de experiencias | Revisar y publicar/rechazar experiencias; despublicar contenido inapropiado. |
 | RF-A04 | Gestión de catálogos | CRUD de categorías, departamentos y municipios. |
 | RF-A05 | Gestión de reservas | Ver todas las reservas, intervenir en cualquier cambio de estado. |
@@ -115,24 +118,27 @@ Incluye todo lo anterior, más:
 
 ## 3. Reglas de negocio
 
-| ID | Regla |
-|---|---|
-| RN-01 | El correo del usuario es único y no distingue mayúsculas (`citext`). |
-| RN-02 | Solo se muestran públicamente experiencias `PUBLICADA` cuya empresa esté `APROBADA` y cuyo operador esté `ACTIVO`. |
-| RN-03 | **No hay sobreventa:** `reserved_capacity <= total_capacity` (CHECK) y la reserva se hace en transacción con bloqueo de fila (`SELECT … FOR UPDATE`) sobre `availability`. |
-| RN-04 | Una reserva solo puede hacerse sobre una disponibilidad `ABIERTA`, futura, con cupos suficientes y respetando `min_people`/`max_people` de la experiencia. |
-| RN-05 | `unit_price` y `total` se congelan al reservar (el cambio posterior de precio no afecta reservas existentes). `total = unit_price × people_count`. |
-| RN-06 | Estados de reserva: `PENDIENTE → CONFIRMADA → COMPLETADA`; `PENDIENTE/CONFIRMADA → CANCELADA`; `CONFIRMADA → NO_ASISTIO`; `PENDIENTE → RECHAZADA`. Estados finales no cambian. |
-| RN-07 | Al pasar a `CANCELADA` o `RECHAZADA`, los cupos vuelven a `availability.reserved_capacity`. |
-| RN-08 | El visitante solo cancela antes de `date - cancellation_policy_hours`. Operador/admin pueden cancelar con motivo. |
-| RN-09 | Toda reserva es de un usuario con cuenta (`VISITANTE`). El visitante sin cuenta no genera registros. |
-| RN-10 | Solo una reseña por reserva (`UNIQUE(reservation_id)`) y únicamente si la reserva está `COMPLETADA`. |
-| RN-11 | `experience.average_rating` y `total_reviews` se recalculan al crear/editar/ocultar reseñas. |
-| RN-12 | Cada cambio de estado de reserva inserta una fila en `reservation_history`. |
-| RN-13 | Cada experiencia tiene exactamente una imagen de portada (`is_cover = true`). |
-| RN-14 | Las imágenes se guardan en MinIO; en BD solo se guarda la clave/URL. |
-| RN-15 | Borrado lógico en usuarios, empresas y experiencias (no se eliminan si tienen reservas). |
-| RN-16 | Todo cambio sensible (aprobaciones, bloqueos, cambios de rol, cancelaciones forzadas) se registra en `audit_log`. |
+| ID    | Regla                                                                                                                                                                                                                                                                                                                                        |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RN-01 | El correo del usuario es único y no distingue mayúsculas (`citext`).                                                                                                                                                                                                                                                                         |
+| RN-02 | Solo se muestran públicamente experiencias `PUBLICADA` cuya empresa esté `APROBADA` y cuyo operador esté `ACTIVO`.                                                                                                                                                                                                                           |
+| RN-03 | **No hay sobreventa:** `reserved_capacity <= total_capacity` (CHECK) y la reserva se hace en transacción con bloqueo de fila (`SELECT … FOR UPDATE`) sobre `availability`.                                                                                                                                                                   |
+| RN-04 | Una reserva solo puede hacerse sobre una disponibilidad `ABIERTA`, futura, con cupos suficientes y respetando `min_people`/`max_people` de la experiencia.                                                                                                                                                                                   |
+| RN-05 | `unit_price` y `total` se congelan al reservar (el cambio posterior de precio no afecta reservas existentes). `total = unit_price × people_count`.                                                                                                                                                                                           |
+| RN-06 | Estados de reserva: `PENDIENTE → CONFIRMADA → COMPLETADA`; `PENDIENTE/CONFIRMADA → CANCELADA`; `CONFIRMADA → NO_ASISTIO`; `PENDIENTE → RECHAZADA`. Estados finales no cambian.                                                                                                                                                               |
+| RN-07 | Al pasar a `CANCELADA` o `RECHAZADA`, los cupos vuelven a `availability.reserved_capacity`.                                                                                                                                                                                                                                                  |
+| RN-08 | El visitante solo cancela antes de `date - cancellation_policy_hours`. Operador/admin pueden cancelar con motivo.                                                                                                                                                                                                                            |
+| RN-09 | Una reserva hecha desde la plataforma (`source = WEB`) siempre pertenece a un usuario con cuenta (`visitor_id` obligatorio). La única excepción es la reserva presencial (`source = PRESENCIAL`, RN-19), donde `visitor_id` es nulo. El visitante sin cuenta nunca genera reservas por sí mismo.                                             |
+| RN-10 | Solo una reseña por reserva (`UNIQUE(reservation_id)`) y únicamente si la reserva está `COMPLETADA` y tiene `visitor_id` (las reservas presenciales sin cuenta no se reseñan).                                                                                                                                                               |
+| RN-11 | `experience.average_rating` y `total_reviews` se recalculan al crear/editar/ocultar reseñas.                                                                                                                                                                                                                                                 |
+| RN-12 | Cada cambio de estado de reserva inserta una fila en `reservation_history`.                                                                                                                                                                                                                                                                  |
+| RN-13 | Cada experiencia tiene exactamente una imagen de portada (`is_cover = true`).                                                                                                                                                                                                                                                                |
+| RN-14 | Las imágenes se guardan en MinIO; en BD solo se guarda la clave/URL.                                                                                                                                                                                                                                                                         |
+| RN-15 | Borrado lógico en usuarios, empresas y experiencias (no se eliminan si tienen reservas).                                                                                                                                                                                                                                                     |
+| RN-16 | Todo cambio sensible (aprobaciones, bloqueos, cambios de rol, cancelaciones forzadas, reservas presenciales) se registra en `audit_log`.                                                                                                                                                                                                     |
+| RN-17 | Nadie se registra directamente como operador. El rol `OPERADOR` solo se asigna al aprobar una `operator_request`, y la aprobación (solicitud + empresa + cambio de rol) se hace en una sola transacción. Un usuario tiene como máximo una solicitud `PENDIENTE`.                                                                             |
+| RN-18 | Los documentos de una solicitud se guardan en un bucket **privado** de MinIO; solo el admin puede verlos (URL temporal firmada). Tras decidir la solicitud se conservan durante un plazo limitado y luego se eliminan (`deleted_at`). El número de DUI no se muestra públicamente.                                                           |
+| RN-19 | Reserva presencial: solo un `OPERADOR` (o el admin) puede crearla, únicamente sobre experiencias de sus empresas. Pasa por las mismas reglas de cupo (RN-03, RN-04) y el mismo bloqueo de fila. Guarda `contact_name` y `contact_phone` (obligatorios) y `contact_email` opcional, `source = PRESENCIAL` y `created_by` = quien la registró. |
 
 ---
 
@@ -149,10 +155,13 @@ Se implementan como `varchar` con CHECK o como enums de EF Core.
 | `dificultad` | `FACIL`, `MODERADA`, `DIFICIL` |
 | `estado_disponibilidad` | `ABIERTA`, `BLOQUEADA`, `CERRADA` (cerrada = cupos llenos o ya pasó) |
 | `estado_reserva` | `PENDIENTE`, `CONFIRMADA`, `CANCELADA`, `RECHAZADA`, `COMPLETADA`, `NO_ASISTIO` |
+| `origen_reserva` | `WEB`, `PRESENCIAL` |
 | `estado_pago` | `PENDIENTE`, `PAGADO_DEMO`, `REEMBOLSADO_DEMO` |
+| `estado_solicitud_operador` | `PENDIENTE`, `APROBADA`, `RECHAZADA`, `CANCELADA` (cancelada = la retiró el solicitante) |
+| `tipo_documento_solicitud` | `DUI_FRENTE`, `DUI_REVERSO`, `FOTO_NEGOCIO`, `ENLACE_REDES`, `REGISTRO_TURISMO`, `OTRO` |
 | `estado_resena` | `VISIBLE`, `OCULTA`, `REPORTADA` |
 | `tipo_token` | `VERIFICAR_EMAIL`, `RESET_PASSWORD`, `REFRESH` |
-| `tipo_notificacion` | `RESERVA_CREADA`, `RESERVA_CONFIRMADA`, `RESERVA_CANCELADA`, `RESERVA_RECHAZADA`, `RECORDATORIO`, `VERIFICAR_EMAIL`, `RESET_PASSWORD`, `NUEVA_RESERVA_OPERADOR` |
+| `tipo_notificacion` | `RESERVA_CREADA`, `RESERVA_CONFIRMADA`, `RESERVA_CANCELADA`, `RESERVA_RECHAZADA`, `RECORDATORIO`, `VERIFICAR_EMAIL`, `RESET_PASSWORD`, `NUEVA_RESERVA_OPERADOR`, `SOLICITUD_OPERADOR_APROBADA`, `SOLICITUD_OPERADOR_RECHAZADA` |
 | `estado_envio` | `PENDIENTE`, `ENVIADO`, `FALLIDO` |
 
 ---
@@ -345,13 +354,16 @@ Instancia concreta de una salida/turno en una fecha, con control de cupos. **Es 
 | version | int | NN, DEF 0 | Control de concurrencia optimista (EF Core `RowVersion`) |
 
 ### 5.12 `reservation`
-Reserva de un turista sobre una disponibilidad.
+Reserva de un turista sobre una disponibilidad. También registra las reservas presenciales que hace un operador para clientes sin cuenta.
 
 | Campo | Tipo | Restricciones | Descripción |
 |---|---|---|---|
 | id | uuid | PK | Identificador |
 | code | varchar(20) | NN, UQ | Código legible (ej. `RSV-2026-000123`) |
-| visitor_id | uuid | FK → app_user.id, NN | Turista que reserva |
+| visitor_id | uuid | FK → app_user.id | Turista que reserva. Nulo solo en reservas `PRESENCIAL` de un cliente sin cuenta |
+| source | varchar(10) | NN, DEF 'WEB' | Ver `origen_reserva` |
+| created_by | uuid | FK → app_user.id | Quién registró la reserva (el visitante, o el operador en una presencial) |
+| | | CHECK (source = 'PRESENCIAL' OR visitor_id IS NOT NULL) | Las reservas web siempre tienen cuenta |
 | availability_id | uuid | FK → availability.id, NN | Fecha/horario reservado |
 | people_count | smallint | NN, CHECK > 0 | Personas |
 | unit_price | numeric(10,2) | NN | Precio congelado por persona |
@@ -360,6 +372,7 @@ Reserva de un turista sobre una disponibilidad.
 | payment_status | varchar(20) | NN, DEF 'PENDIENTE' | Ver `estado_pago` (simulado) |
 | contact_name | varchar(150) | NN | Contacto en la reserva |
 | contact_phone | varchar(20) | NN | Teléfono |
+| contact_email | varchar(150) | | Correo para enviar la confirmación (opcional en reservas presenciales) |
 | visitor_notes | varchar(500) | | Comentarios del turista |
 | cancellation_reason | varchar(500) | | Si fue cancelada/rechazada |
 | cancelled_by | uuid | FK → app_user.id | Quién canceló/rechazó |
@@ -441,6 +454,36 @@ Bitácora de acciones sensibles para el administrador.
 | ip | varchar(45) | | IP de origen |
 | created_at | timestamptz | NN, DEF now() | Momento |
 
+### 5.18 `operator_request`
+Solicitud de un visitante para convertirse en operador. Une la verificación de la persona con la aprobación de su empresa (una sola revisión del admin).
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| id | uuid | PK | Identificador |
+| user_id | uuid | FK → app_user.id, NN | Visitante que solicita |
+| company_id | uuid | FK → company.id, NN | Empresa registrada en la solicitud (`company.status = PENDIENTE` hasta decidir) |
+| status | varchar(10) | NN, DEF 'PENDIENTE' | Ver `estado_solicitud_operador` |
+| message | varchar(500) | | Comentario del solicitante |
+| rejection_reason | varchar(500) | | Motivo si fue rechazada |
+| reviewed_by | uuid | FK → app_user.id | Admin que decidió |
+| reviewed_at | timestamptz | | Fecha de decisión |
+| created_at | timestamptz | NN, DEF now() | Envío |
+| updated_at | timestamptz | NN, DEF now() | Última modificación |
+| | | UQ(user_id) WHERE status = 'PENDIENTE' | Una sola solicitud activa por usuario (índice único parcial) |
+
+### 5.19 `operator_request_document`
+Documentos de respaldo de cada solicitud. Los archivos viven en un bucket **privado** de MinIO.
+
+| Campo | Tipo | Restricciones | Descripción |
+|---|---|---|---|
+| id | uuid | PK | Identificador |
+| request_id | uuid | FK → operator_request.id, NN | Solicitud |
+| type | varchar(20) | NN | Ver `tipo_documento_solicitud` |
+| object_key | varchar(300) | | Clave del archivo en el bucket privado (nula si es un enlace) |
+| url | varchar(500) | | Enlace externo (redes, sitio web) cuando el tipo es `ENLACE_REDES` |
+| created_at | timestamptz | NN, DEF now() | Subida |
+| deleted_at | timestamptz | | Cuando se eliminó el archivo por el plazo de retención (RN-18) |
+
 ---
 
 ## 6. Relaciones (resumen)
@@ -468,6 +511,11 @@ Bitácora de acciones sensibles para el administrador.
 | app_user | 1 : N | email_notification | Correos del usuario |
 | reservation | 1 : N | email_notification | Correos de una reserva |
 | app_user | 1 : N | audit_log | Acciones registradas |
+| app_user (solicitante) | 1 : N | operator_request | Solicitudes para ser operador (una activa a la vez) |
+| company | 1 : N | operator_request | Empresa que se aprueba junto con la solicitud |
+| operator_request | 1 : N | operator_request_document | Documentos de respaldo |
+| app_user (admin) | 1 : N | operator_request | Revisor de la solicitud |
+| app_user (operador) | 1 : N | reservation | Reservas que registró en persona (`created_by`) |
 
 ---
 
@@ -485,6 +533,9 @@ Bitácora de acciones sensibles para el administrador.
 | availability | (date, status) y (experience_id, date) | Consulta de cupos y calendario |
 | availability | CHECK(reserved_capacity <= total_capacity) | **Sin sobreventa** |
 | reservation | UQ(code); (visitor_id, created_at DESC); (availability_id, status) | "Mis reservas" y panel del operador |
+| reservation | CHECK(source = 'PRESENCIAL' OR visitor_id IS NOT NULL) | Solo las presenciales pueden no tener cuenta |
+| operator_request | (status, created_at); UQ(user_id) WHERE status = 'PENDIENTE' | Cola del admin y una solicitud activa por usuario |
+| operator_request_document | (request_id) | Documentos de una solicitud |
 | review | UQ(reservation_id); (experience_id, status, created_at DESC) | Una reseña por reserva y listado en la ficha |
 | email_notification | (status, created_at) | Cola de envío / reintentos |
 | municipality | UQ(department_id, name) | Sin duplicados |
@@ -548,6 +599,10 @@ erDiagram
     app_user ||--o{ email_notification : "recibe"
     reservation |o--o{ email_notification : "origina"
     app_user |o--o{ audit_log : "ejecuta"
+    app_user ||--o{ operator_request : "solicita"
+    company ||--o{ operator_request : "se aprueba con"
+    operator_request ||--o{ operator_request_document : "adjunta"
+    app_user |o--o{ reservation : "registra en persona"
 
     department {
         smallint id PK
@@ -688,6 +743,8 @@ erDiagram
         uuid id PK
         string code UK
         uuid visitor_id FK
+        string source
+        uuid created_by FK
         uuid availability_id FK
         smallint people_count
         decimal unit_price
@@ -696,6 +753,7 @@ erDiagram
         string payment_status
         string contact_name
         string contact_phone
+        string contact_email
         string visitor_notes
         string cancellation_reason
         uuid cancelled_by FK
@@ -758,6 +816,27 @@ erDiagram
         string ip
         timestamptz created_at
     }
+    operator_request {
+        uuid id PK
+        uuid user_id FK
+        uuid company_id FK
+        string status
+        string message
+        string rejection_reason
+        uuid reviewed_by FK
+        timestamptz reviewed_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+    operator_request_document {
+        uuid id PK
+        uuid request_id FK
+        string type
+        string object_key
+        string url
+        timestamptz created_at
+        timestamptz deleted_at
+    }
 ```
 
 ---
@@ -771,4 +850,7 @@ erDiagram
 - **Promedio de calificación:** recalcular `average_rating` y `total_reviews` en la misma transacción al crear/ocultar/editar una reseña.
 - **Correos:** insertar en `email_notification` dentro de la transacción de la reserva y enviarlos con un servicio en segundo plano (`BackgroundService`) con reintentos. Así un fallo del correo no rompe la reserva.
 - **Concurrencia:** además de `FOR UPDATE`, se puede usar `version` como token de concurrencia optimista en EF Core.
+- **Alta de operador:** el visitante crea la empresa (`company`, `PENDIENTE`, con él como `operator_id`) y la `operator_request` en una misma transacción. Al aprobar, otra transacción actualiza `operator_request`, `company.status = APROBADA` y `app_user.role = OPERADOR`, escribe en `audit_log` y encola el correo (`SOLICITUD_OPERADOR_APROBADA`). Validaciones previas automáticas (formato y dígito verificador del DUI, correo verificado, teléfono) reducen la carga del admin.
+- **Documentos privados:** los archivos de `operator_request_document` van a un bucket privado de MinIO, sin URL pública; el admin los ve con URLs firmadas de corta duración. Un servicio programado elimina los archivos vencidos y marca `deleted_at`.
+- **Reservas presenciales:** usan el mismo servicio de reserva que las web (misma transacción y `SELECT … FOR UPDATE` sobre `availability`), solo cambia que `visitor_id` es nulo, `source = PRESENCIAL` y `created_by` es el operador. El correo de confirmación solo se envía si hay `contact_email`.
 - **Extensiones futuras (fuera del alcance actual):** tabla `payment` real con pasarela, cupones/descuentos, mensajería turista–operador, multi-idioma de contenido (`experience_translation`).
