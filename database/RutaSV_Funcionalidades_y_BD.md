@@ -195,13 +195,15 @@ Todas las personas con cuenta: administradores, operadores y turistas.
 |---|---|---|---|
 | id | uuid | PK | Identificador |
 | email | citext | NN, UQ | Correo (login) |
-| password_hash | varchar(255) | NN | Hash (BCrypt/Argon2), nunca texto plano |
+| password_hash | varchar(255) |  | Hash (BCrypt/Argon2), nunca texto plano |
 | first_name | varchar(80) | NN | Nombres |
 | last_name | varchar(80) | NN | Apellidos |
 | phone | varchar(20) | | Teléfono de contacto |
 | photo_url | varchar(500) | | Foto de perfil (MinIO) |
 | preferred_language | varchar(5) | DEF 'es' | `es` / `en` (para correos) |
 | role | varchar(15) | NN, DEF 'VISITANTE' | Ver `rol_usuario` |
+| auth_provider | varchar(20) | NN, DEF 'LOCAL'| Forma de acceso. Sus valores: LOCAL, GOOGLE |
+| provider_id | varchar(255) | | Para guardar el ID único que devuelve Google |
 | status | varchar(25) | NN, DEF 'PENDIENTE_VERIFICACION' | Ver `estado_usuario` |
 | email_verified | boolean | NN, DEF false | Si confirmó su correo |
 | last_login_at | timestamptz | | Último inicio de sesión |
